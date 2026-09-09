@@ -88,6 +88,48 @@ describe("readiness truth table", () => {
       blocker: { kind: "failing-checks" },
     });
   });
+
+  it("classifies a PR confirmed to have no checks as clean and ready", async () => {
+    const reader = fakeReader({
+      fastPath: {
+        kind: "unusable",
+        exitCode: 1,
+        stderr: "no checks reported on the 'feature' branch",
+      },
+    });
+    const snapshot = await readSnapshot({
+      reader,
+      context: context(30),
+      pendingHistory: "omit",
+      allowDraft: false,
+    });
+    expect(snapshot.kind).toBe("open");
+    if (snapshot.kind !== "open") throw new Error("expected open snapshot");
+    expect(snapshot.ci.kind).toBe("ci-clean");
+    expect(snapshot.ci.all).toEqual([]);
+    expect(classifyPr(snapshot).kind).toBe("ready");
+  });
+
+  it("keeps a BLOCKED merge state fail-closed when no checks are reported", async () => {
+    const reader = fakeReader({
+      facts: { mergeStateStatus: "BLOCKED" },
+      fastPath: {
+        kind: "unusable",
+        exitCode: 1,
+        stderr: "no checks reported on the 'feature' branch",
+      },
+    });
+    await expect(
+      readSnapshot({
+        reader,
+        context: context(31),
+        pendingHistory: "omit",
+        allowDraft: false,
+      }),
+    ).rejects.toMatchObject({
+      failure: { kind: "checks-unavailable", retryable: true },
+    });
+  });
 });
 
 describe("snapshot query planning", () => {

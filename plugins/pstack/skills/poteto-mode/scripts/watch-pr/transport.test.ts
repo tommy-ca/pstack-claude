@@ -37,10 +37,19 @@ if (scenario === 'slow') {
 let value;
 if (args[0] === 'pr' && args[1] === 'view') {
   value = { headRefOid: 'head', mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', reviewDecision: 'APPROVED', headRefName: 'feature', baseRefName: 'main', state: 'OPEN', mergedAt: null, isDraft: false };
+} else if (args[0] === 'pr' && args[1] === 'checks' && scenario === 'no-checks') {
+  process.stderr.write("no checks reported on the 'feature' branch\\n");
+  process.exit(1);
 } else if (args[0] === 'pr' && args[1] === 'checks') {
   value = [{ name: 'ci', state: 'SUCCESS', bucket: 'pass', description: '', link: '', workflow: '' }];
 } else if (args[0] === 'pr' && args[1] === 'list') {
   value = [{ number: 1, headRefName: 'main', baseRefName: 'main', headRepository: { name: 'repo', nameWithOwner: 'fork/repo' }, headRepositoryOwner: { login: 'fork' } }];
+} else if (args.some(a => a.includes('query PrCheckRollup')) && scenario === 'no-checks') {
+  value = { data: { repository: { pullRequest: { commits: { nodes: [{ commit: { oid: 'head', statusCheckRollup: null } }] } } } } };
+} else if (args.some(a => a.includes('query PrCommitStatuses')) && scenario === 'no-checks') {
+  value = { data: { repository: { pullRequest: { commits: { nodes: [{ commit: { oid: 'head', statusCheckRollup: null } }] } } } } };
+} else if (args.some(a => a.includes('query PrCheckRollup'))) {
+  throw new Error('unexpected PrCheckRollup fixture call');
 } else if (args.some(a => a.includes('query ReviewThreads'))) {
   const after = args.find(a => a.startsWith('after='));
   const thread = (n, resolved) => ({ id: 't' + n, isResolved: resolved, comments: { nodes: [] } });
@@ -112,6 +121,17 @@ it("rejects a repeating page cursor instead of looping or silently truncating", 
       args.some((arg) => arg.includes("ReviewThreads")),
     ),
   ).toHaveLength(2);
+});
+
+it("merges a PR with no checks after GitHub confirms the empty rollup", () => {
+  const result = run("no-checks");
+  expect(result.status).toBe(0);
+  expect(JSON.parse(result.stdout.trim())).toMatchObject({ kind: "READY" });
+  expect(
+    result.calls.some((args) =>
+      args.some((arg) => arg.includes("query PrCheckRollup")),
+    ),
+  ).toBe(true);
 });
 
 it("keeps a fork main branch distinct from destination main during stack discovery", () => {

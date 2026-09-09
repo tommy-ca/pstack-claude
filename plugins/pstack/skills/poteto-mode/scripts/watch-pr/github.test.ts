@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import {
-  ChecksUnavailable,
   WatcherQueryError,
   mapRollupNode,
   orderStack,
@@ -15,6 +14,7 @@ import {
   passingCheck,
   pendingCheck,
 } from "./fakes.test-helper.ts";
+import type { GitHubReader } from "./types.ts";
 import { parsePrNumber } from "./types.ts";
 
 const context = {
@@ -63,18 +63,55 @@ describe("checks fallback chain", () => {
     expect(reader.calls).toEqual(["checksFastPath", "checkRollupPage:null"]);
   });
 
-  it("fails closed when both paths are empty", async () => {
+  it("treats a successful empty rollup as a valid no-check result", async () => {
     const reader = fakeReader({
       fastPath: {
         kind: "unusable",
-        exitCode: 8,
-        stderr: "credential cannot read checks",
+        exitCode: 1,
+        stderr: "no checks reported on the 'feature' branch",
       },
     });
-    await expect(resolveChecks(reader, context)).rejects.toBeInstanceOf(
-      ChecksUnavailable,
-    );
+    const read = await resolveChecks(reader, context);
+    expect(read).toEqual({ source: "graphql-rollup", checks: [] });
     expect(reader.calls).toEqual(["checksFastPath", "checkRollupPage:null"]);
+  });
+
+  it("keeps a genuine rollup query failure fail-closed", async () => {
+    const base = fakeReader({
+      fastPath: { kind: "unusable", exitCode: 1, stderr: "" },
+    });
+    const reader = {
+      ...base,
+      async checkRollupPage() {
+        throw new WatcherQueryError({
+          kind: "command-exit",
+          retryable: true,
+          detail: "gh api graphql exited 1",
+          code: 1,
+        });
+      },
+    } satisfies GitHubReader;
+    await expect(resolveChecks(reader, context)).rejects.toMatchObject({
+      failure: { kind: "command-exit" },
+    });
+  });
+
+  it("rejects a repeating rollup cursor instead of looping", async () => {
+    const reader = fakeReader({
+      fastPath: { kind: "unusable", exitCode: 1, stderr: "" },
+      rollupPages: [
+        { checks: [], endCursor: "next" },
+        { checks: [], endCursor: "next" },
+      ],
+    });
+    await expect(resolveChecks(reader, context)).rejects.toMatchObject({
+      failure: { kind: "missing-key" },
+    });
+    expect(reader.calls).toEqual([
+      "checksFastPath",
+      "checkRollupPage:null",
+      "checkRollupPage:next",
+    ]);
   });
 });
 

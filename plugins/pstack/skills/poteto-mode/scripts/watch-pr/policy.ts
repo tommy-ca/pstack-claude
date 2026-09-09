@@ -100,6 +100,20 @@ export async function readSnapshot(args: {
     };
   else {
     const merge = await mergeAssessment(args.reader, facts);
+    // An empty rollup is only trustworthy as a no-check state when GitHub
+    // does not block the merge. BLOCKED with zero reported checks means
+    // required checks are expected but not yet reported (for example a fork
+    // PR awaiting workflow approval); falling back to ci-clean there would
+    // fabricate a false green, so keep that state fail-closed and retryable.
+    if (
+      checks.checks.length === 0 &&
+      facts.mergeStateStatus === "BLOCKED"
+    )
+      throw new WatcherQueryError({
+        kind: "checks-unavailable",
+        retryable: true,
+        detail: `no checks reported and merge state is BLOCKED; required checks may be expected (pr=${facts.context.number})`,
+      });
     const base = {
       source: checks.source,
       all: checks.checks,

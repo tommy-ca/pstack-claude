@@ -36,12 +36,6 @@ export class WatcherQueryError extends Error {
     this.failure = failure;
   }
 }
-export class ChecksUnavailable extends WatcherQueryError {
-  constructor(detail: string) {
-    super({ kind: "checks-unavailable", retryable: true, detail });
-    this.name = "ChecksUnavailable";
-  }
-}
 const firstLine = (value: string): string =>
   value.trim().split(/\r?\n/, 1)[0]?.slice(0, 240) ?? "";
 function run(
@@ -719,19 +713,28 @@ export async function resolveChecks(
   const direct = fast.kind === "checks" ? nonEmpty(fast.checks) : null;
   if (direct !== null) return { source: "gh-pr-checks", checks: direct };
   const checks: T.Check[] = [];
+  const cursors = new Set<string>();
   let after: string | null = null;
   do {
     const page = await reader.checkRollupPage(context, after);
     checks.push(...page.checks);
     after = page.endCursor;
+    if (after !== null) {
+      if (!after || cursors.has(after))
+        throw new WatcherQueryError({
+          kind: "missing-key",
+          retryable: true,
+          detail: "contexts.pageInfo.endCursor must advance",
+        });
+      cursors.add(after);
+    }
   } while (after !== null);
-  const fallback = nonEmpty(checks);
-  if (fallback !== null) return { source: "graphql-rollup", checks: fallback };
-  const suffix =
-    fast.kind === "unusable"
-      ? `fast path exit=${fast.exitCode}; GraphQL rollup was empty${firstLine(fast.stderr) ? `; ${firstLine(fast.stderr)}` : ""}`
-      : "fast path and GraphQL rollup were empty";
-  throw new ChecksUnavailable(`could not read PR checks: ${suffix}`);
+  // A structurally valid rollup that yields no contexts — for example
+  // statusCheckRollup: null on a branch that has no checks, or gh pr checks
+  // exit 1 with "no checks reported" — is a valid no-check observation, not a
+  // query failure. Genuine command/JSON/schema failures already threw from
+  // checkRollupPage and must stay fail-closed.
+  return { source: "graphql-rollup", checks };
 }
 export async function resolveContext(args: {
   readonly reader: T.GitHubReader;
