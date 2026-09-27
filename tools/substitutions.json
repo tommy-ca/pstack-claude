@@ -66,7 +66,8 @@
   "denylist": [
     {
       "token": "grok-",
-      "hint": "Cursor model slug; point at the Models section, or add a substitution rule for the phrase"
+      "files": "^(?!models\\.json$|skills/poteto-mode/references/droid-tools\\.md$)",
+      "hint": "Cursor model slug; point at the Models section, or add a substitution rule for the phrase. models.json and droid-tools.md name the Droid panel's grok arm deliberately, so the entry skips them"
     },
     {
       "regex": "\\b(?:claude|gpt|gemini|composer)-[0-9a-z.-]*-(?:max|fast|xhigh|high|medium|low|thinking)\\b",

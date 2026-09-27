@@ -71,6 +71,12 @@ describe("models.json shape", () => {
     expect(Object.keys(raw.codex).sort()).toEqual(Object.keys(raw.tiers).sort());
     expect(new Set(raw.codex.panel).size).toBe(raw.codex.panel.length);
   });
+
+  test("the droid examples cover every tier and the panel names distinct models", () => {
+    expect(Object.keys(raw.droid).sort()).toEqual(Object.keys(raw.tiers).sort());
+    expect(new Set(raw.droid.panel).size).toBe(raw.droid.panel.length);
+    for (const slug of raw.droid.panel) expect(typeof slug === "string" && slug.length > 0).toBe(true);
+  });
 });
 
 describe("role labels reach the prose", () => {

@@ -2,6 +2,16 @@
 
 This port applies the Cursor → Claude Code substitutions in skill bodies. Earlier drafts left them flagged; this revision resolves them. A later pass added a Codex build that shares the same skills; see [Codex port](#codex-port) below.
 
+## 0.9.46 - droid harness adaptor for model role routing
+
+Factory Droid joins Claude Code and Codex as a runtime adaptation surface. `plugins/pstack/models.json` gains a `droid` block whose keys mirror `tiers`, so the tier join the Codex mapping already uses covers Droid unchanged: single-model roles run the medium tier `glm-5.3`, the strongest roles run `claude-opus-5-5`, and the diverse-model panels fan out over a four-arm cross-family panel, `glm-5.3`, `glm-5.3-flash`, `gemini-3.8-flash`, and `grok-4.7`. The generator stamps a Model names section into the new `poteto-mode/references/droid-tools.md`, mirroring the Codex one, and `tests/models.test.mjs` pins the key mirror and the distinct panel with the same assertions the Codex block carries. The panel's grok arm trips the sync denylist's bare `grok-` Cursor-slug token, so denylist entries gain the optional `files` scoping substitution rules already have, and the `grok-` entry skips the port's two model-policy files, `models.json` and `droid-tools.md`; everywhere else a grok slug still fails the scan.
+
+`droid-tools.md` translates the Claude tool names to Droid's (`Skill` unchanged, `Agent` to `Task` with a complexity tier, `AskUserQuestion` to `AskUser`, the task tools to `TodoWrite`, `WebFetch` to `FetchUrl`), routes subagents through the `Task` complexity tiers backed by `subagentModelSettings` in `~/.factory/settings.json`, and names the panel arms as personal droids created under `~/.factory/droids/`. `poteto-mode`'s Platform Adaptation paragraph points Droid at the file the same way it points Codex at `codex-tools.md`.
+
+Droid reads personal defaults from `~/.factory/AGENTS.md` and does not read the Claude override sheet, so the reference names `~/.factory/settings.json` as the surface that holds the model pins.
+
+**Verified.** `bun tools/generate.mjs` and `bun test tests/` results are in the PR.
+
 ## 0.9.45 - respect CLAUDE_CONFIG_DIR for the override sheet
 
 The Claude Code SessionStart hook read `$HOME/.claude/pstack-models.md` even when `CLAUDE_CONFIG_DIR` pointed Claude Code at another directory, so a `session hook: off` line in the active configuration had no effect. The skills named the same fixed path, so an agent that read the sheet directly fell back to the defaults. Reported in #102.

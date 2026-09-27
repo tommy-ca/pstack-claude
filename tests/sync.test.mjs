@@ -118,6 +118,13 @@ describe("denylistHits", () => {
     expect(denylistHits("how.md", "the role line in the `pstack-models.mdc` rule", RULES.denylist)).toHaveLength(1);
   });
 
+  test("the grok- entry skips the port's own Droid model-policy files", () => {
+    const slug = "panel arm `grok-4.7`";
+    expect(denylistHits("models.json", slug, RULES.denylist)).toEqual([]);
+    expect(denylistHits("skills/poteto-mode/references/droid-tools.md", slug, RULES.denylist)).toEqual([]);
+    expect(denylistHits("skills/poteto-mode/SKILL.md", slug, RULES.denylist)).toHaveLength(1);
+  });
+
   test("a model name in an example is not a Cursor slug", () => {
     expect(denylistHits("synthesizer.md", "we renamed `gpt-4` to `gpt-4o` in `encodingForModel`", RULES.denylist)).toEqual([]);
   });

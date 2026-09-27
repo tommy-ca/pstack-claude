@@ -30,5 +30,10 @@
     "default": "gpt-6-sol",
     "strongest": "gpt-6-astra",
     "panel": ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"]
+  },
+  "droid": {
+    "default": "glm-5.3",
+    "strongest": "claude-opus-5-5",
+    "panel": ["glm-5.3", "glm-5.3-flash", "gemini-3.8-flash", "grok-4.7"]
   }
 }

@@ -19,7 +19,8 @@
 //   available slugs, Codex equivalents)
 //     -> each model-consuming skill's "## Models" section
 //     -> setup-pstack's override-sheet block and interrogate's reviewer table
-//     -> the "## Model names" section of poteto-mode/references/codex-tools.md
+//     -> the "## Model names" sections of poteto-mode/references/codex-tools.md
+//     and poteto-mode/references/droid-tools.md
 //     -> one effort agent pair per level in plugins/pstack/effort-agents/
 //   plugins/pstack/{agents,effort-agents}/*.md -> the "agents" list in
 //     plugins/pstack/.claude-plugin/plugin.json (a list replaces the default
@@ -408,6 +409,12 @@ export function regions(models) {
       locate: section("Model names"),
       render: () => blankPadded(codexModelNamesSection(models)),
     },
+    {
+      file: "plugins/pstack/skills/poteto-mode/references/droid-tools.md",
+      name: "Model names section",
+      locate: section("Model names"),
+      render: () => blankPadded(droidModelNamesSection(models)),
+    },
   ];
 }
 
@@ -619,6 +626,25 @@ export function codexModelNamesSection(models) {
     `on ChatGPT is ${codeList(models.codex.panel)}. If only one model family is reachable, vary reasoning ` +
     "effort and note in the verdict that diversity was reduced.\n\n" +
     "`/setup-pstack` writes the configured model list. On Codex, set it to your Codex model slugs."
+  );
+}
+
+export function droidModelNamesSection(models) {
+  const strongest = models.roles.filter((r) => r.tier === "strongest");
+  return (
+    "Skills name Claude defaults (a single-role default for code/prose/judgment plus a diverse-model panel for " +
+    "diverse-model panels; each model-consuming skill lists its own in a Models section). These family names do " +
+    "not resolve on Droid. Substitute your configured Droid models:\n\n" +
+    `- Single-model roles: the Droid medium tier (for example ${code(models.droid.default)}), set per tier in ` +
+    "`subagentModelSettings`.\n" +
+    `- Roles that default to the strongest Claude model (${strongest.map((r) => code(r.role)).join(", ")}): ` +
+    `the Droid heavy tier (for example ${code(models.droid.strongest)}).\n` +
+    "- Diverse-model panels (`arena`, `architect`, `interrogate`, `how` critics, `reflect`): the adversarial " +
+    "signal comes from model diversity, so spawn one subagent per panel arm through the personal `pstack-panel` " +
+    `droids. The four-arm default panel on Droid is ${codeList(models.droid.panel)}.\n\n` +
+    "Droid adds a light tier below the medium one (explorer delegates, fast mechanical edits) on " +
+    "`glm-5.3-flash`. The tiers and their per-tier reasoning effort are configured in `subagentModelSettings` " +
+    "in `~/.factory/settings.json`; `/setup-pstack` writes no Droid configuration."
   );
 }
 
