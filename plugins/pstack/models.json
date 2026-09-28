@@ -34,6 +34,11 @@
   "droid": {
     "default": "glm-5.3",
     "strongest": "claude-opus-5-5",
-    "panel": ["glm-5.3", "glm-5.3-flash", "gemini-3.8-flash", "grok-4.7"]
+    "panel": ["glm-5.3", "gemini-3.8-flash", "grok-4.7"]
+  },
+  "droidArms": {
+    "glm-5.3": "pstack-panel-zhipu",
+    "gemini-3.8-flash": "pstack-panel-google",
+    "grok-4.7": "pstack-panel-grok"
   }
 }

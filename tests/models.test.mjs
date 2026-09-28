@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadModels, regions, resolveModels } from "../tools/generate.mjs";
+import { loadModels, regions, resolveModels, section } from "../tools/generate.mjs";
 import { markdownFiles } from "../tools/validate-skills.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -80,6 +80,23 @@ describe("models.json shape", () => {
     expect(new Set(raw.droid.panel).size).toBe(raw.droid.panel.length);
     for (const slug of raw.droid.panel) expect(typeof slug === "string" && slug.length > 0).toBe(true);
   });
+
+  test("the droid panel is the three audited cross-family candidates", () => {
+    // Audited 2026-09-28 against docs.factory.ai/models: the zhipu arm
+    // glm-5.3 (0.56x), the google arm gemini-3.8-flash (0.3x promotional,
+    // 0.6x from 2027-01-01), and the grok arm grok-4.7 (0.8x). The
+    // glm-5.3-flash arm was dropped; it stays the light-tier model.
+    expect(raw.droid.panel).toEqual(["glm-5.3", "gemini-3.8-flash", "grok-4.7"]);
+  });
+
+  test("the droid arms name one personal panel droid per panel slug", () => {
+    // droidArms feeds the generator's Model names stamp, so the stamped arm
+    // list can never drift from the panel it belongs to.
+    expect(Object.keys(raw.droidArms ?? {}).sort()).toEqual([...raw.droid.panel].sort());
+    for (const droid of Object.values(raw.droidArms)) {
+      expect(typeof droid === "string" && /^pstack-panel-[a-z0-9-]+$/.test(droid)).toBe(true);
+    }
+  });
 });
 
 describe("role labels reach the prose", () => {
@@ -106,4 +123,36 @@ describe("role labels reach the prose", () => {
       expect(normalize(skillProse(role.skill))).toContain(needle);
     });
   }
+});
+
+describe("droid routing prose", () => {
+  const droidTools = readFileSync(join(skillsDir, "poteto-mode/references/droid-tools.md"), "utf8");
+
+  test("the stamped Model names section carries the three-candidate panel and the luna cheap workers", () => {
+    const lines = droidTools.split("\n");
+    const range = section("Model names")(lines);
+    expect(range).not.toBe(null);
+    const body = lines.slice(range[0], range[1]).join("\n");
+    for (const slug of raw.droid.panel) expect(body).toContain(`\`${slug}\``);
+    expect(body).toContain("three-arm default panel");
+    expect(body).toContain("`gpt-6-luna`");
+    expect(body).toContain("`gpt-5.6-luna`");
+    expect(body).not.toContain("four-arm");
+  });
+
+  test("the Model names section names the arm droids with their audited prices", () => {
+    // Scoped to the generator-owned Model names region: the arm list there is
+    // stamped from models.json's droidArms, while the hand-written Subagent
+    // policy prose above it is outside this stamp's contract.
+    const lines = droidTools.split("\n");
+    const range = section("Model names")(lines);
+    expect(range).not.toBe(null);
+    const body = lines.slice(range[0], range[1]).join("\n");
+    for (const slug of raw.droid.panel) {
+      expect(body).toContain(`\`${raw.droidArms[slug]}\``);
+      expect(body).toContain(`\`${slug}\``);
+    }
+    for (const price of ["0.56x", "0.3x", "0.8x"]) expect(body).toContain(price);
+    expect(body).not.toContain("pstack-panel-zhipu-flash");
+  });
 });
