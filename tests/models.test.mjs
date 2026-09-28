@@ -74,6 +74,9 @@ describe("models.json shape", () => {
 
   test("the droid examples cover every tier and the panel names distinct models", () => {
     expect(Object.keys(raw.droid).sort()).toEqual(Object.keys(raw.tiers).sort());
+    expect(typeof raw.droid.default === "string" && raw.droid.default.length > 0).toBe(true);
+    expect(typeof raw.droid.strongest === "string" && raw.droid.strongest.length > 0).toBe(true);
+    expect(Array.isArray(raw.droid.panel) && raw.droid.panel.length > 0).toBe(true);
     expect(new Set(raw.droid.panel).size).toBe(raw.droid.panel.length);
     for (const slug of raw.droid.panel) expect(typeof slug === "string" && slug.length > 0).toBe(true);
   });
