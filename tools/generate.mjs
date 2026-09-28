@@ -630,18 +630,22 @@ export function codexModelNamesSection(models) {
 }
 
 export function droidModelNamesSection(models) {
-  const strongest = models.roles.filter((r) => r.tier === "strongest");
   return (
     "Skills name Claude defaults (a single-role default for code/prose/judgment plus a diverse-model panel for " +
     "diverse-model panels; each model-consuming skill lists its own in a Models section). These family names do " +
     "not resolve on Droid. Substitute your configured Droid models:\n\n" +
     `- Single-model roles: the Droid medium tier (for example ${code(models.droid.default)}), set per tier in ` +
-    "`subagentModelSettings`.\n" +
-    `- Roles that default to the strongest Claude model (${strongest.map((r) => code(r.role)).join(", ")}): ` +
-    `the Droid heavy tier (for example ${code(models.droid.strongest)}).\n` +
-    "- Diverse-model panels (`arena`, `architect`, `interrogate`, `how` critics, `reflect`): the adversarial " +
-    "signal comes from model diversity, so spawn one subagent per panel arm through the personal `pstack-panel` " +
-    `droids. The four-arm default panel on Droid is ${codeList(models.droid.panel)}.\n\n` +
+    "`subagentModelSettings`, carries the code playbook roles (`feature`, `refactoring`, `bug-fix`, " +
+    "`perf-issue`, `hillclimb`), the judgment seats (judgment and prose, the how explainer, the why synthesizer, " +
+    "reflect judgment), and swarm workers. Upstream routes the `bug-fix`, `perf-issue`, and `hillclimb` playbooks " +
+    "to its code seat rather than the judgment seat, so on Droid they ride the medium tier, not the heavy tier.\n" +
+    "- The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms, strongest judgment) and " +
+    `contested design: the Droid heavy tier (for example ${code(models.droid.strongest)}), at max effort, ` +
+    "matching the upstream opus seat.\n" +
+    "- Diverse-model panels (arena runners and the arena cross-judge pool, architect runners, interrogate " +
+    "reviewers): the adversarial signal comes from model diversity, so spawn one subagent per panel arm through " +
+    "the personal `pstack-panel` droids. The four-arm default panel on Droid is " +
+    `${codeList(models.droid.panel)}.\n\n` +
     "Droid adds a light tier below the medium one (explorer delegates, fast mechanical edits) on " +
     "`glm-5.3-flash`. The tiers and their per-tier reasoning effort are configured in `subagentModelSettings` " +
     "in `~/.factory/settings.json`; `/setup-pstack` writes no Droid configuration."

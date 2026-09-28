@@ -24,7 +24,7 @@ A session may defer a tool such as `WebSearch` or `FetchUrl` until it is needed;
 
 poteto-mode's Subagents section sets Claude-specific defaults (`subagent_type: "pstack:poteto-agent"`, `run_in_background: true`). On Droid:
 
-- There is no `pstack:poteto-agent` plugin namespace. Route an ad-hoc subagent through the `Task` tool's complexity tiers, backed by `subagentModelSettings` in `~/.factory/settings.json`: light (explorer delegates, fast mechanical edits) on `glm-5.3-flash`, medium (feature work, refactoring, judgment and prose) on `glm-5.3`, and heavy for the roles the strongest tier owns (`bug-fix`, `perf-issue`, `hillclimb`, strongest judgment) on the heavy tier's pinned model, named in Model names below. Each tier also carries its per-tier reasoning effort in the same settings.
+- There is no `pstack:poteto-agent` plugin namespace. Route an ad-hoc subagent through the `Task` tool's complexity tiers, backed by `subagentModelSettings` in `~/.factory/settings.json`: light (explorer delegates, fast mechanical edits) on `glm-5.3-flash`, medium (the code playbook roles, the judgment seats, swarm workers) on `glm-5.3`, and heavy (the hardest changes, strongest judgment, contested design) at max effort on the heavy tier's pinned model, named in Model names below. Each tier also carries its per-tier reasoning effort in the same settings.
 - A role line of `inherit-parent` or `auto` maps to a `model: inherit` droid, which runs on the parent session's model; dispatch it without a model override.
 - Panel arms are personal droids named `pstack-panel-zhipu`, `pstack-panel-zhipu-flash`, `pstack-panel-google`, and `pstack-panel-grok`, created under `~/.factory/droids/`. Spawn one `Task` call per arm and keep the arms model-diverse.
 - There is no `comment-sicko` subagent type either. The **no-comments** skill spawns it on Claude Code; on Droid dispatch a `Task` whose instructions tell it to read `poteto-mode/references/agents/comment-sicko.md` in full first.
@@ -36,9 +36,9 @@ poteto-mode's Subagents section sets Claude-specific defaults (`subagent_type: "
 
 Skills name Claude defaults (a single-role default for code/prose/judgment plus a diverse-model panel for diverse-model panels; each model-consuming skill lists its own in a Models section). These family names do not resolve on Droid. Substitute your configured Droid models:
 
-- Single-model roles: the Droid medium tier (for example `glm-5.3`), set per tier in `subagentModelSettings`.
-- Roles that default to the strongest Claude model (`bug-fix`, `perf-issue`, `hillclimb`, `strongest judgment`): the Droid heavy tier (for example `claude-opus-5-5`).
-- Diverse-model panels (`arena`, `architect`, `interrogate`, `how` critics, `reflect`): the adversarial signal comes from model diversity, so spawn one subagent per panel arm through the personal `pstack-panel` droids. The four-arm default panel on Droid is `glm-5.3`, `glm-5.3-flash`, `gemini-3.8-flash`, `grok-4.7`.
+- Single-model roles: the Droid medium tier (for example `glm-5.3`), set per tier in `subagentModelSettings`, carries the code playbook roles (`feature`, `refactoring`, `bug-fix`, `perf-issue`, `hillclimb`), the judgment seats (judgment and prose, the how explainer, the why synthesizer, reflect judgment), and swarm workers. Upstream routes the `bug-fix`, `perf-issue`, and `hillclimb` playbooks to its code seat rather than the judgment seat, so on Droid they ride the medium tier, not the heavy tier.
+- The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms, strongest judgment) and contested design: the Droid heavy tier (for example `claude-opus-5-5`), at max effort, matching the upstream opus seat.
+- Diverse-model panels (arena runners and the arena cross-judge pool, architect runners, interrogate reviewers): the adversarial signal comes from model diversity, so spawn one subagent per panel arm through the personal `pstack-panel` droids. The four-arm default panel on Droid is `glm-5.3`, `glm-5.3-flash`, `gemini-3.8-flash`, `grok-4.7`.
 
 Droid adds a light tier below the medium one (explorer delegates, fast mechanical edits) on `glm-5.3-flash`. The tiers and their per-tier reasoning effort are configured in `subagentModelSettings` in `~/.factory/settings.json`; `/setup-pstack` writes no Droid configuration.
 
