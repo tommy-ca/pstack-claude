@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadModels, regions, resolveModels } from "../tools/generate.mjs";
+import { loadModels, regions, resolveModels, section } from "../tools/generate.mjs";
 import { markdownFiles } from "../tools/validate-skills.mjs";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -80,6 +80,14 @@ describe("models.json shape", () => {
     expect(new Set(raw.droid.panel).size).toBe(raw.droid.panel.length);
     for (const slug of raw.droid.panel) expect(typeof slug === "string" && slug.length > 0).toBe(true);
   });
+
+  test("the droid panel is the three audited cross-family candidates", () => {
+    // Audited 2026-09-28 against docs.factory.ai/models: the zhipu arm
+    // glm-5.3 (0.56x), the google arm gemini-3.8-flash (0.3x promotional,
+    // 0.6x from 2027-01-01), and the grok arm grok-4.7 (0.8x). The
+    // glm-5.3-flash arm was dropped; it stays the light-tier model.
+    expect(raw.droid.panel).toEqual(["glm-5.3", "gemini-3.8-flash", "grok-4.7"]);
+  });
 });
 
 describe("role labels reach the prose", () => {
@@ -106,4 +114,27 @@ describe("role labels reach the prose", () => {
       expect(normalize(skillProse(role.skill))).toContain(needle);
     });
   }
+});
+
+describe("droid routing prose", () => {
+  const droidTools = readFileSync(join(skillsDir, "poteto-mode/references/droid-tools.md"), "utf8");
+
+  test("the stamped Model names section carries the three-candidate panel and the luna cheap workers", () => {
+    const lines = droidTools.split("\n");
+    const range = section("Model names")(lines);
+    expect(range).not.toBe(null);
+    const body = lines.slice(range[0], range[1]).join("\n");
+    for (const slug of raw.droid.panel) expect(body).toContain(`\`${slug}\``);
+    expect(body).toContain("three-arm default panel");
+    expect(body).toContain("`gpt-6-luna`");
+    expect(body).toContain("`gpt-5.6-luna`");
+    expect(body).not.toContain("four-arm");
+  });
+
+  test("the panel arms are three personal droids with no zhipu-flash arm", () => {
+    for (const arm of ["pstack-panel-zhipu", "pstack-panel-google", "pstack-panel-grok"]) {
+      expect(droidTools).toContain(`\`${arm}\``);
+    }
+    expect(droidTools).not.toContain("pstack-panel-zhipu-flash");
+  });
 });

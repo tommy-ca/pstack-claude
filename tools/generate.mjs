@@ -644,10 +644,11 @@ export function droidModelNamesSection(models) {
     "matching the upstream opus seat.\n" +
     "- Diverse-model panels (arena runners and the arena cross-judge pool, architect runners, interrogate " +
     "reviewers): the adversarial signal comes from model diversity, so spawn one subagent per panel arm through " +
-    "the personal `pstack-panel` droids. The four-arm default panel on Droid is " +
+    "the personal `pstack-panel` droids. The three-arm default panel on Droid is " +
     `${codeList(models.droid.panel)}.\n\n` +
-    "Droid adds a light tier below the medium one (explorer delegates, fast mechanical edits) on " +
-    "`glm-5.3-flash`. The tiers and their per-tier reasoning effort are configured in `subagentModelSettings` " +
+    "Droid adds a light tier below the medium one (explorer delegates, fast mechanical edits, cheap workers and " +
+    "implementation dispatches) on `glm-5.3-flash`, with `gpt-6-luna` and `gpt-5.6-luna` as the cheap-worker " +
+    "pool's OpenAI seats. The tiers and their per-tier reasoning effort are configured in `subagentModelSettings` " +
     "in `~/.factory/settings.json`; `/setup-pstack` writes no Droid configuration."
   );
 }

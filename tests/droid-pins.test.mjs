@@ -5,9 +5,10 @@
 // gauntlet bans, the 2x ceiling, the unknown-slug fail, the panel-droid
 // invariants, settings list values, frontmatter trailing comments, stray
 // non-markdown droids files, the empty droid panel beside a future mirrored
-// tier, and the explicit-flag failures. python3 is a build-time dependency of
-// the check, not of the plugin, so the suite skips cleanly where it is not
-// installed.
+// tier, and the explicit-flag failures. The luna cheap-worker slugs pass at
+// their audited prices while an unknown luna-family slug still fails. python3
+// is a build-time dependency of the check, not of the plugin, so the suite
+// skips cleanly where it is not installed.
 import { afterEach, test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
@@ -96,6 +97,27 @@ pinsTest('a slug priced at the 2x ceiling and an unknown slug each fail', () => 
   assert.match(result.stdout, /banned slug claude-opus-5 at droid:ceiling\.md: over budget at 2x/);
   assert.match(result.stdout, /over ceiling claude-opus-5 \(2\.0x\) at droid:ceiling\.md/);
   assert.match(result.stdout, /unknown slug glm-6-flash at droid:unknown\.md/);
+});
+
+pinsTest('the luna cheap-worker slugs pass at their audited prices', () => {
+  const factory = createFactory(
+    { subagentModelSettings: { workerModel: 'gpt-6-luna', implModel: 'gpt-5.6-luna' } },
+    { 'cheap-worker.md': { model: 'gpt-6-luna', reasoningEffort: 'medium' } },
+  );
+  const result = runPins(factory);
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /FILTER_OK/);
+  assert.match(result.stdout, /gpt-6-luna\s+0\.04x\s+settings:subagentModelSettings\.workerModel/);
+  assert.match(result.stdout, /gpt-5\.6-luna\s+0\.08x\s+settings:subagentModelSettings\.implModel/);
+  assert.match(result.stdout, /gpt-6-luna\s+0\.04x\s+droid:cheap-worker\.md/);
+});
+
+pinsTest('an unknown luna-family slug still fails the gauntlet', () => {
+  const factory = createFactory(undefined, { 'near-miss.md': { model: 'gpt-6-luna-pro' } });
+  const result = runPins(factory);
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /FILTER_FAIL/);
+  assert.match(result.stdout, /unknown slug gpt-6-luna-pro at droid:near-miss\.md/);
 });
 
 pinsTest('a pstack-panel droid on inherit without an effort fails both invariants', () => {

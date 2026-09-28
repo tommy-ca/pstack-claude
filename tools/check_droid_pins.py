@@ -35,12 +35,18 @@ EFFORTS = {"off", "minimal", "none", "low", "medium", "high", "xhigh", "max"}
 GEMINI_PRO = re.compile(r"gemini.*[-_.]pro")
 
 # Audited 2026-09-28 against https://docs.factory.ai/models.
+# gpt-6-luna (0.04x) and gpt-5.6-luna (0.08x) are user-mandated allowed
+# cheap-worker slugs from the same audit. gpt-5.6-luna is deliberately NOT
+# marked dominated by gpt-6-luna despite the older-generation-higher-price
+# pattern; the mandate overrides that rule.
 PRICES = {
     "glm-5.3-flash": 0.06,
     "glm-5.3": 0.56,
     "claude-opus-5-5": 1.6,
     "claude-opus-5": 2.0,
     "gpt-6-sol": 0.8,
+    "gpt-6-luna": 0.04,
+    "gpt-5.6-luna": 0.08,
     "grok-4.7": 0.8,
 }
 # gemini-3.8-flash is 0.3x promotional before 2027-01-01, then 0.6x.
