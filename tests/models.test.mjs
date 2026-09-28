@@ -88,6 +88,15 @@ describe("models.json shape", () => {
     // glm-5.3-flash arm was dropped; it stays the light-tier model.
     expect(raw.droid.panel).toEqual(["glm-5.3", "gemini-3.8-flash", "grok-4.7"]);
   });
+
+  test("the droid arms name one personal panel droid per panel slug", () => {
+    // droidArms feeds the generator's Model names stamp, so the stamped arm
+    // list can never drift from the panel it belongs to.
+    expect(Object.keys(raw.droidArms ?? {}).sort()).toEqual([...raw.droid.panel].sort());
+    for (const droid of Object.values(raw.droidArms)) {
+      expect(typeof droid === "string" && /^pstack-panel-[a-z0-9-]+$/.test(droid)).toBe(true);
+    }
+  });
 });
 
 describe("role labels reach the prose", () => {
@@ -131,10 +140,19 @@ describe("droid routing prose", () => {
     expect(body).not.toContain("four-arm");
   });
 
-  test("the panel arms are three personal droids with no zhipu-flash arm", () => {
-    for (const arm of ["pstack-panel-zhipu", "pstack-panel-google", "pstack-panel-grok"]) {
-      expect(droidTools).toContain(`\`${arm}\``);
+  test("the Model names section names the arm droids with their audited prices", () => {
+    // Scoped to the generator-owned Model names region: the arm list there is
+    // stamped from models.json's droidArms, while the hand-written Subagent
+    // policy prose above it is outside this stamp's contract.
+    const lines = droidTools.split("\n");
+    const range = section("Model names")(lines);
+    expect(range).not.toBe(null);
+    const body = lines.slice(range[0], range[1]).join("\n");
+    for (const slug of raw.droid.panel) {
+      expect(body).toContain(`\`${raw.droidArms[slug]}\``);
+      expect(body).toContain(`\`${slug}\``);
     }
-    expect(droidTools).not.toContain("pstack-panel-zhipu-flash");
+    for (const price of ["0.56x", "0.3x", "0.8x"]) expect(body).toContain(price);
+    expect(body).not.toContain("pstack-panel-zhipu-flash");
   });
 });

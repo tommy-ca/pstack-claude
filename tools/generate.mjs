@@ -16,7 +16,7 @@
 //   user-invocable: false); a skill without a row or a row without a skill
 //   fails by name.
 //   plugins/pstack/models.json (the model policy: role defaults, diverse panel,
-//   available slugs, Codex equivalents)
+//     available slugs, Codex equivalents, Droid arm droids)
 //     -> each model-consuming skill's "## Models" section
 //     -> setup-pstack's override-sheet block and interrogate's reviewer table
 //     -> the "## Model names" sections of poteto-mode/references/codex-tools.md
@@ -629,7 +629,23 @@ export function codexModelNamesSection(models) {
   );
 }
 
+// Audited 2026-09-28 against https://docs.factory.ai/models; keep in step
+// with the PRICES table in tools/check_droid_pins.py. The gemini arm carries
+// both tiers of its promotional price in prose, the way the lever prints it.
+const DROID_ARM_PRICES = {
+  "glm-5.3": "0.56x",
+  "gemini-3.8-flash": "0.3x promotional, 0.6x from 2027-01-01",
+  "grok-4.7": "0.8x",
+};
+
 export function droidModelNamesSection(models) {
+  const arms = models.droid.panel.map((slug) => {
+    const droid = models.droidArms?.[slug];
+    if (!droid) throw new Error(`models.json: no droidArms entry for the panel slug ${slug}`);
+    const price = DROID_ARM_PRICES[slug];
+    if (!price) throw new Error(`models.json: no audited DROID_ARM_PRICES entry for the panel slug ${slug}`);
+    return `${code(droid)} (${code(slug)}, ${price})`;
+  });
   return (
     "Skills name Claude defaults (a single-role default for code/prose/judgment plus a diverse-model panel for " +
     "diverse-model panels; each model-consuming skill lists its own in a Models section). These family names do " +
@@ -645,7 +661,7 @@ export function droidModelNamesSection(models) {
     "- Diverse-model panels (arena runners and the arena cross-judge pool, architect runners, interrogate " +
     "reviewers): the adversarial signal comes from model diversity, so spawn one subagent per panel arm through " +
     "the personal `pstack-panel` droids. The three-arm default panel on Droid is " +
-    `${codeList(models.droid.panel)}.\n\n` +
+    `${arms.join(", ")}.\n\n` +
     "Droid adds a light tier below the medium one (explorer delegates, fast mechanical edits, cheap workers and " +
     "implementation dispatches) on `glm-5.3-flash`, with `gpt-6-luna` and `gpt-5.6-luna` as the cheap-worker " +
     "pool's OpenAI seats. The tiers and their per-tier reasoning effort are configured in `subagentModelSettings` " +

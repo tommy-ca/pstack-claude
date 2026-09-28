@@ -2,21 +2,26 @@
 """Pin check for the Droid pstack model policy.
 
 Two surfaces, each with a flag: --factory-dir (default ~/.factory) walks
-settings.json for every key ending in model or reasoningeffort and parses the
-droids/*.md frontmatter, and --models-json (default the repo's
+settings.json for every key ending in model, models, modellist, candidates,
+reasoningeffort, or reasoningefforts — a string, or a list whose string items
+are each pinned; any other value under such a key fails — and parses the
+droids/**/*.md frontmatter recursively, and --models-json (default the repo's
 plugins/pstack/models.json) checks the droid section. Every pin runs the same
 unconditional gauntlet in order: the BANNED exact-match denylist, the
 claude-sonnet substring rule, the Gemini Pro regex, the PRICES known-slug
-table, and the 2x ceiling. A settings key ending in model or reasoningeffort
-carries a string, or a list whose string items are each pinned; any other
-value under such a key fails. Droid frontmatter strips an unquoted trailing
-comment before the value is pinned, and a non-markdown regular file directly
-under droids/ fails. The droid section pins every key whose value is a string
-or a list of strings, so a future mirrored tier cannot evade the gauntlet,
-and an empty panel fails. An explicitly passed --factory-dir must exist and
-yield at least one pin; the default ~/.factory is skipped when absent. A
-missing models.json or droid section fails. FILTER_OK exits 0, FILTER_FAIL
-exits 1.
+table, and the 2x ceiling. Membership is enforced on top of the gauntlet: the
+droid section's panel must equal the exact three-slug panel set,
+droid.default must be glm-5.3, and droid.strongest must be claude-opus-5-5;
+every pstack-panel-* droid must pin a model from the panel set, and the panel
+droids collectively must pin the three different panel slugs. A droid's
+frontmatter pins every model value it carries — a duplicate model key fails
+and each of its values still runs the gauntlet — and a non-markdown regular
+file anywhere under droids/ fails. The droid section pins every key whose
+value is a string or a list of strings, so a future mirrored tier cannot
+evade the gauntlet, and an empty panel fails. An explicitly passed
+--factory-dir must exist and yield at least one pin; the default ~/.factory
+is skipped when absent. A missing models.json or droid section fails.
+FILTER_OK exits 0, FILTER_FAIL exits 1.
 """
 
 import argparse
@@ -90,26 +95,45 @@ BANNED = {
     "glm-5.1": "legacy, scheduled for removal",
 }
 
+# The Droid panel is exactly these three cross-family arms; droidArms in
+# plugins/pstack/models.json names the personal droid per arm.
+PANEL = ["glm-5.3", "gemini-3.8-flash", "grok-4.7"]
+PANEL_SET = frozenset(PANEL)
+DROID_DEFAULT = "glm-5.3"
+DROID_STRONGEST = "claude-opus-5-5"
+
+# Settings keys whose values carry model slugs or effort levels. The plural
+# endings visit workerModels, fallbackModelList, panelCandidates, and
+# reasoningEfforts too, so a banned slug under a plural key cannot pass
+# silently.
+MODEL_ENDINGS = ("model", "models", "modellist", "candidates")
+EFFORT_ENDINGS = ("reasoningeffort", "reasoningefforts")
+
+
+def collect_values(key, value, child, bucket, failures):
+    if isinstance(value, str):
+        bucket[child] = value
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            if isinstance(item, str):
+                bucket[f"{child}[{index}]"] = item
+            else:
+                failures.append(
+                    f"non-string {key}[{index}] value at settings:{child}[{index}]: {item!r}"
+                )
+    else:
+        failures.append(f"non-string {key} value at settings:{child}: {value!r}")
+
 
 def walk(node, path, models, efforts, failures):
     if isinstance(node, dict):
         for key, value in node.items():
             child = f"{path}.{key}" if path else key
             lowered = key.lower()
-            if lowered.endswith("model") or lowered.endswith("reasoningeffort"):
-                bucket = models if lowered.endswith("model") else efforts
-                if isinstance(value, str):
-                    bucket[child] = value
-                elif isinstance(value, list):
-                    for index, item in enumerate(value):
-                        if isinstance(item, str):
-                            bucket[f"{child}[{index}]"] = item
-                        else:
-                            failures.append(
-                                f"non-string {key}[{index}] value at settings:{child}[{index}]: {item!r}"
-                            )
-                else:
-                    failures.append(f"non-string {key} value at settings:{child}: {value!r}")
+            if lowered.endswith(MODEL_ENDINGS):
+                collect_values(key, value, child, models, failures)
+            elif lowered.endswith(EFFORT_ENDINGS):
+                collect_values(key, value, child, efforts, failures)
             walk(value, child, models, efforts, failures)
     elif isinstance(node, list):
         for index, item in enumerate(node):
@@ -117,13 +141,21 @@ def walk(node, path, models, efforts, failures):
 
 
 def frontmatter(text):
+    """Parse the `---` frontmatter block into (fields, model_values).
+
+    model_values lists every `model` value in order of appearance, so a
+    duplicate `model` key cannot hide an earlier value from the gauntlet;
+    fields keeps the last value of each key as before. Returns None when
+    the file carries no frontmatter block.
+    """
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         return None
     fields = {}
+    model_values = []
     for line in lines[1:]:
         if line.strip() == "---":
-            return fields
+            return fields, model_values
         key, sep, value = line.partition(":")
         if sep:
             value = value.strip()
@@ -133,7 +165,10 @@ def frontmatter(text):
                 value = value[1 : value.find(value[0], 1)].strip("'\"")
             else:
                 value = re.split(r"\s#", value, 1)[0].strip().strip("'\"")
-            fields[key.strip()] = value
+            key = key.strip()
+            fields[key] = value
+            if key == "model":
+                model_values.append(value)
     return None
 
 
@@ -180,35 +215,49 @@ def collect_factory(factory, explicit, pins, efforts, inherit, failures):
         if explicit and len(pins) == before:
             failures.append(f"--factory-dir {factory} yielded no pins")
         return skipped
-    for entry in sorted(droids.iterdir()):
+    for entry in sorted(droids.rglob("*")):
         if entry.is_file() and entry.suffix != ".md":
-            failures.append(f"non-markdown file in the droids dir at {entry.name}")
-    for droid in sorted(droids.glob("*.md")):
-        where = f"droid:{droid.name}"
+            failures.append(f"non-markdown file in the droids dir at {entry.relative_to(droids)}")
+    panel_models = []
+    for droid in sorted(droids.rglob("*.md")):
+        where = f"droid:{droid.relative_to(droids)}"
         try:
-            fields = frontmatter(droid.read_text())
+            parsed = frontmatter(droid.read_text())
         except OSError as error:
             failures.append(f"unreadable droid at {where}: {error}")
             continue
-        if fields is None:
+        if parsed is None:
             failures.append(f"no frontmatter at {where}")
             continue
-        if "model" not in fields:
+        fields, model_values = parsed
+        if not model_values:
             failures.append(f"no model key in frontmatter at {where}")
             continue
-        model = fields["model"]
-        if model == "inherit":
-            inherit.append(where)
-        else:
-            pins[where] = model
+        if len(model_values) > 1:
+            failures.append(f"duplicate model key at {where}: {model_values}")
+        for index, value in enumerate(model_values):
+            slot = where if index == 0 else f"{where}#model{index + 1}"
+            if value == "inherit":
+                inherit.append(slot)
+            else:
+                pins[slot] = value
         effort = fields.get("reasoningEffort")
         if effort is not None:
             efforts[f"{where}.reasoningEffort"] = effort
+        model = model_values[0]
         if droid.name.startswith("pstack-panel-"):
             if model == "inherit":
                 failures.append(f"panel droid must pin a non-inherit model at {where}")
+            else:
+                panel_models.append(model)
+                if model not in PANEL_SET:
+                    failures.append(f"panel droid model {model} at {where} is not in the panel set {PANEL}")
             if effort is None:
                 failures.append(f"panel droid missing reasoningEffort at {where}")
+    if len(set(panel_models)) != len(PANEL) or set(panel_models) != PANEL_SET:
+        failures.append(
+            f"panel droids must pin the three different panel slugs {PANEL}, got {sorted(set(panel_models))}"
+        )
     if explicit and len(pins) == before:
         failures.append(f"--factory-dir {factory} yielded no pins")
     return skipped
@@ -255,9 +304,12 @@ def collect_models_json(target, pins, failures):
                     failures.append(f"empty or non-string {key}[{index}] slug at {where}")
         else:
             failures.append(f"non-string {key} value at models-json:droid.{key}")
-    for key in ("default", "strongest"):
-        if not (isinstance(droid.get(key), str) and droid[key]):
+    for key, expected in (("default", DROID_DEFAULT), ("strongest", DROID_STRONGEST)):
+        value = droid.get(key)
+        if not (isinstance(value, str) and value):
             failures.append(f"missing or empty {key} slug in the droid section at {target}")
+        elif value != expected:
+            failures.append(f"droid.{key} must be {expected} at {target}, got {value!r}")
     panel = droid.get("panel")
     if not isinstance(panel, list):
         failures.append(f"no panel list in the droid section at {target}")
@@ -267,6 +319,8 @@ def collect_models_json(target, pins, failures):
         slugs = [slug for slug in panel if isinstance(slug, str)]
         if len(set(slugs)) != len(slugs):
             failures.append(f"duplicate panel slugs {slugs} at {target}")
+        if len(slugs) != len(PANEL) or set(slugs) != PANEL_SET:
+            failures.append(f"droid.panel must equal the exact panel set {PANEL} at {target}, got {slugs}")
 
 
 def main() -> int:
