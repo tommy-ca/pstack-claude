@@ -71,8 +71,8 @@ export function applySubstitutions(text, rules, rel = "") {
 }
 
 // An entry is a literal `token` or a `regex`; either fails the line it matches.
-// An optional `files` regex scopes an entry to matching paths, the same
-// positive-match shape a substitution rule's `files` uses.
+// An optional `files` path regex scopes an entry to the paths it matches,
+// either polarity, matched the same way a substitution rule's `files` field is.
 export function denylistHits(path, text, denylist) {
   const hits = [];
   text.split("\n").forEach((line, i) => {

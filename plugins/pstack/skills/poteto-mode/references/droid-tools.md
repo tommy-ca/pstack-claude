@@ -15,8 +15,8 @@ pstack skills are written in Claude Code tool language (the `Skill` tool, the `A
 | Invoke a skill (the `Skill` tool, `/command`) | The `Skill` tool, same name. Follow the instructions it presents. |
 | Dispatch a subagent (the `Agent`/`Task` tool) | `Task` with `subagent_type` plus a complexity tier (light, medium, heavy) |
 | Dispatch N parallel subagents in one turn | N `Task` calls in one response |
-| Track tasks (the todolist; `TaskCreate` / `TaskUpdate`, or `TodoWrite` on Claude Code) | `TodoWrite` |
-| Ask the human a fixed-choice question (`AskUserQuestion`) | `AskUser` |
+| Track tasks (the todolist; `TaskCreate` / `TaskUpdate`, or `TodoWrite` on Claude Code) | `TodoWrite` in the main Droid session; a subagent surface may lack the tool, so keep a `todo.md` checklist in the work dir |
+| Ask the human a fixed-choice question (`AskUserQuestion`) | `AskUser` in the main Droid session; a subagent surface may lack the tool, so ask the question in plain text |
 
 A session may defer a tool such as `WebSearch` or `FetchUrl` until it is needed; load it through `ToolSearch` before use.
 
@@ -24,7 +24,7 @@ A session may defer a tool such as `WebSearch` or `FetchUrl` until it is needed;
 
 poteto-mode's Subagents section sets Claude-specific defaults (`subagent_type: "pstack:poteto-agent"`, `run_in_background: true`). On Droid:
 
-- There is no `pstack:poteto-agent` plugin namespace. Route an ad-hoc subagent through the `Task` tool's complexity tiers, backed by `subagentModelSettings` in `~/.factory/settings.json`: light (explorer delegates, fast mechanical edits) on `glm-5.3-flash`, medium (feature work, refactoring, judgment and prose) on `glm-5.3`, heavy (the strongest calls) on the strongest pinned model, named in Model names below. Each tier also carries its per-tier reasoning effort in the same settings.
+- There is no `pstack:poteto-agent` plugin namespace. Route an ad-hoc subagent through the `Task` tool's complexity tiers, backed by `subagentModelSettings` in `~/.factory/settings.json`: light (explorer delegates, fast mechanical edits) on `glm-5.3-flash`, medium (feature work, refactoring, judgment and prose) on `glm-5.3`, and heavy for the roles the strongest tier owns (`bug-fix`, `perf-issue`, `hillclimb`, strongest judgment) on the heavy tier's pinned model, named in Model names below. Each tier also carries its per-tier reasoning effort in the same settings.
 - A role line of `inherit-parent` or `auto` maps to a `model: inherit` droid, which runs on the parent session's model; dispatch it without a model override.
 - Panel arms are personal droids named `pstack-panel-zhipu`, `pstack-panel-zhipu-flash`, `pstack-panel-google`, and `pstack-panel-grok`, created under `~/.factory/droids/`. Spawn one `Task` call per arm and keep the arms model-diverse.
 - There is no `comment-sicko` subagent type either. The **no-comments** skill spawns it on Claude Code; on Droid dispatch a `Task` whose instructions tell it to read `poteto-mode/references/agents/comment-sicko.md` in full first.
