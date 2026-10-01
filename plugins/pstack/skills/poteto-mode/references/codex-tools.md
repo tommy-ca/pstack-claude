@@ -41,13 +41,46 @@ poteto-mode's Subagents section sets Claude-specific defaults (`subagent_type: "
 
 ## Model names
 
-Skills name Claude defaults (a single-role default for code/prose/judgment plus a diverse-model panel for diverse-model panels; each model-consuming skill lists its own in a Models section). These slugs do not resolve on Codex. Substitute your configured Codex models:
+Skills name Claude defaults (a single-role default for code/prose/judgment plus a diverse-model panel for diverse-model panels; each model-consuming skill lists its own in a Models section). Those slugs do not resolve on Codex. The mappings below use selectable models from the Codex CLI catalog.
 
-- Single-model roles: your primary Codex model (for example `gpt-5.6-sol`).
-- Roles that default to the strongest Claude model (`bug-fix`, `perf-issue`, `hillclimb`, `strongest judgment`): your strongest Codex model (for example `gpt-6-astra`).
-- Diverse-model panels (`arena`, `architect`, `interrogate`, `how` critics, `reflect`): the adversarial signal comes from model diversity, so use the distinct Codex models available to you. A good default quad on ChatGPT is `gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`. If only one model family is reachable, vary reasoning effort and note in the verdict that diversity was reduced.
+Catalog source: `codex debug models` from Codex CLI 0.159.2.
 
-`/setup-pstack` writes the configured model list. On Codex, set it to your Codex model slugs.
+Available Codex CLI models:
+- `gpt-6-astra` (GPT-6-Astra): Frontier intelligence for the most demanding work. Default reasoning is `low`; supported levels are `low`, `medium`, `high`, `xhigh`, `max`, `ultra`.
+- `gpt-6.1-sol` (GPT-6.1-Sol): Latest workhorse model for coding and everyday work. Default reasoning is `low`; supported levels are `low`, `medium`, `high`, `xhigh`, `max`, `ultra`.
+- `gpt-6-sol` (GPT-6-Sol): Previous generation workhorse model. Default reasoning is `medium`; supported levels are `low`, `medium`, `high`, `xhigh`, `max`, `ultra`.
+- `gpt-6-luna` (GPT-6-Luna): Fast and affordable model for easier tasks. Default reasoning is `medium`; supported levels are `low`, `medium`, `high`, `xhigh`, `max`.
+- `gpt-5.6-sol` (GPT-5.6-Sol): Older generation workhorse model. Default reasoning is `low`; supported levels are `low`, `medium`, `high`, `xhigh`, `max`, `ultra`.
+- `gpt-5.6-terra` (GPT-5.6-Terra): Older balanced model for straightforward work. Default reasoning is `medium`; supported levels are `low`, `medium`, `high`, `xhigh`, `max`, `ultra`.
+- `gpt-5.6-luna` (GPT-5.6-Luna): Older fast and efficient model. Default reasoning is `medium`; supported levels are `low`, `medium`, `high`, `xhigh`, `max`.
+- `gpt-5.5` (GPT-5.5): Legacy coding model. Default reasoning is `medium`; supported levels are `low`, `medium`, `high`, `xhigh`.
+
+Codex defaults by pstack role:
+
+| Role | Model |
+| --- | --- |
+| feature, refactoring | `gpt-6.1-sol` |
+| bug-fix | `gpt-6-astra` |
+| perf-issue | `gpt-6-astra` |
+| hillclimb | `gpt-6-astra` |
+| judgment and prose | `gpt-6.1-sol` |
+| strongest judgment | `gpt-6-astra` |
+| how explorer | `gpt-6.1-sol` |
+| how explainer | `gpt-6.1-sol` |
+| why investigators | `gpt-6.1-sol` |
+| why synthesizer | `gpt-6.1-sol` |
+| reflect tooling | `gpt-6.1-sol` |
+| reflect judgment, divergent, synthesizer | `gpt-6-astra` |
+| arena runners | Codex panel quad |
+| arena cross-judge pool | Codex panel quad |
+| swarm workers | `gpt-6.1-sol` |
+| architect runners | Codex panel quad |
+| interrogate reviewers | Codex panel quad |
+
+Single-model default: `gpt-6.1-sol`. Strongest-model default: `gpt-6-astra`.
+Codex panel quad: `gpt-6-astra`, `gpt-6.1-sol`, `gpt-5.6-terra`, `gpt-6-luna`.
+
+`/setup-pstack` writes the configured model list. On Codex, use the model slugs in the mappings above. If a panel can reach only one model family, vary reasoning effort and report the reduced model diversity.
 
 ## Driver and bundled skills pstack references
 
@@ -67,7 +100,7 @@ Affected skill entry points and the optional Codex slash stubs point here. Most 
 | Skill | On Codex |
 |-------|----------|
 | `interrogate` | The `subagent_type`/`model`/`readonly` dispatch fields map to `spawn_agent`; substitute your configured Codex models and keep the reviewer panel model-diverse. |
-| `setup-pstack` | The override sheet is `~/.codex/pstack-models.md`, the slugs are your Codex models (see Model names above), and you load it by adding the sheet's contents to `~/.codex/AGENTS.md`; Codex has no `@`-include into a rules file. The role rows in step 5 are identical. |
+| `setup-pstack` | The override sheet is `~/.codex/pstack-models.md`, the slugs are your Codex models (see Model names above), and you load it by adding the sheet's contents to `~/.codex/AGENTS.md`; Codex has no `@`-include into a rules file. Keep the role labels from step 5 and use the Codex defaults above. |
 | `no-comments` | There is no `comment-sicko` subagent type; see Subagent policy above. |
 | `teach` | Running `how` and `why` in parallel maps to `spawn_agent` fan-out; image generation uses the configured Codex equivalent. |
 | `create-verification-skill` | The generated skill lands under `.claude/skills/verify/` on Claude Code; write it to Codex's project-skill location instead. The app-driving harness is platform-neutral. |

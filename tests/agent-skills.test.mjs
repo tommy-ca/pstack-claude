@@ -335,16 +335,35 @@ describe("shared Agent Skills tree", () => {
 });
 
 describe("Codex model names", () => {
-  test("names a strongest Codex model for the roles that default to it on Claude", () => {
+  test("lists the Codex CLI catalog and maps every pstack role", () => {
     const models = JSON.parse(
       readFileSync(join(repoRoot, "plugins/pstack/models.json"), "utf8"),
     );
     const section = codexModelNamesSection(models);
 
     expect(section).toContain("gpt-6-astra");
-    for (const role of ["bug-fix", "perf-issue", "hillclimb", "strongest judgment"]) {
-      expect(section).toContain(role);
+    expect(section).toContain("Codex CLI 0.159.2");
+    for (const model of models.codex.available) {
+      expect(section).toContain(model.slug);
+      expect(section).toContain(model.label);
     }
+    for (const role of models.codex.roles) expect(section).toContain(`| ${role.role} |`);
+    expect(section).toContain("| arena runners | Codex panel quad |");
+    expect(section).toContain("| interrogate reviewers | Codex panel quad |");
+    expect(section).toContain("Codex panel quad: `gpt-6-astra`, `gpt-6.1-sol`, `gpt-5.6-terra`, `gpt-6-luna`.");
     expect(section).not.toContain("claude-opus-5");
+  });
+
+  test("keeps Codex-only catalog data out of Claude-generated defaults", () => {
+    const models = JSON.parse(
+      readFileSync(join(repoRoot, "plugins/pstack/models.json"), "utf8"),
+    );
+    expect(models.singleRoleDefault).toBe("claude-opus-5");
+    expect(models.panel).toEqual(["claude-opus-5", "claude-fable-5", "claude-sonnet-5"]);
+    expect(
+      models.roles.every(
+        (role) => role.models === "panel" || role.models.every((slug) => slug.startsWith("claude-")),
+      ),
+    ).toBe(true);
   });
 });

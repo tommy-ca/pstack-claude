@@ -30,8 +30,86 @@
     { "role": "interrogate reviewers", "models": "panel", "skill": "interrogate" }
   ],
   "codex": {
-    "singleRoleExample": "gpt-5.6-sol",
-    "strongestRoleExample": "gpt-6-astra",
-    "panelQuad": ["gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]
+    "catalogVersion": "0.159.2",
+    "available": [
+      {
+        "label": "GPT-6-Astra",
+        "slug": "gpt-6-astra",
+        "description": "Frontier intelligence for the most demanding work.",
+        "defaultReasoningLevel": "low",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh", "max", "ultra"]
+      },
+      {
+        "label": "GPT-6.1-Sol",
+        "slug": "gpt-6.1-sol",
+        "description": "Latest workhorse model for coding and everyday work.",
+        "defaultReasoningLevel": "low",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh", "max", "ultra"]
+      },
+      {
+        "label": "GPT-6-Sol",
+        "slug": "gpt-6-sol",
+        "description": "Previous generation workhorse model.",
+        "defaultReasoningLevel": "medium",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh", "max", "ultra"]
+      },
+      {
+        "label": "GPT-6-Luna",
+        "slug": "gpt-6-luna",
+        "description": "Fast and affordable model for easier tasks.",
+        "defaultReasoningLevel": "medium",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh", "max"]
+      },
+      {
+        "label": "GPT-5.6-Sol",
+        "slug": "gpt-5.6-sol",
+        "description": "Older generation workhorse model.",
+        "defaultReasoningLevel": "low",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh", "max", "ultra"]
+      },
+      {
+        "label": "GPT-5.6-Terra",
+        "slug": "gpt-5.6-terra",
+        "description": "Older balanced model for straightforward work.",
+        "defaultReasoningLevel": "medium",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh", "max", "ultra"]
+      },
+      {
+        "label": "GPT-5.6-Luna",
+        "slug": "gpt-5.6-luna",
+        "description": "Older fast and efficient model.",
+        "defaultReasoningLevel": "medium",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh", "max"]
+      },
+      {
+        "label": "GPT-5.5",
+        "slug": "gpt-5.5",
+        "description": "Legacy coding model.",
+        "defaultReasoningLevel": "medium",
+        "supportedReasoningLevels": ["low", "medium", "high", "xhigh"]
+      }
+    ],
+    "singleRoleDefault": "gpt-6.1-sol",
+    "strongestRoleDefault": "gpt-6-astra",
+    "panelQuad": ["gpt-6-astra", "gpt-6.1-sol", "gpt-5.6-terra", "gpt-6-luna"],
+    "roles": [
+      { "role": "feature, refactoring", "models": ["gpt-6.1-sol"], "skill": "poteto-mode" },
+      { "role": "bug-fix", "models": ["gpt-6-astra"], "skill": "poteto-mode" },
+      { "role": "perf-issue", "models": ["gpt-6-astra"], "skill": "poteto-mode" },
+      { "role": "hillclimb", "models": ["gpt-6-astra"], "skill": "poteto-mode" },
+      { "role": "judgment and prose", "models": ["gpt-6.1-sol"], "skill": "poteto-mode" },
+      { "role": "strongest judgment", "models": ["gpt-6-astra"], "skill": "poteto-mode" },
+      { "role": "how explorer", "models": ["gpt-6.1-sol"], "skill": "how" },
+      { "role": "how explainer", "models": ["gpt-6.1-sol"], "skill": "how" },
+      { "role": "why investigators", "models": ["gpt-6.1-sol"], "skill": "why" },
+      { "role": "why synthesizer", "models": ["gpt-6.1-sol"], "skill": "why" },
+      { "role": "reflect tooling", "models": ["gpt-6.1-sol"], "skill": "reflect" },
+      { "role": "reflect judgment, divergent, synthesizer", "models": ["gpt-6-astra"], "skill": "reflect" },
+      { "role": "arena runners", "models": "panel", "skill": "arena" },
+      { "role": "arena cross-judge pool", "models": "panel", "skill": "arena" },
+      { "role": "swarm workers", "models": ["gpt-6.1-sol"], "skill": "swarm" },
+      { "role": "architect runners", "models": "panel", "skill": "architect" },
+      { "role": "interrogate reviewers", "models": "panel", "skill": "interrogate" }
+    ]
   }
 }

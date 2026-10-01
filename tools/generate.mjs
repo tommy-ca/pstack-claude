@@ -411,6 +411,12 @@ export function resolveModels(models) {
   return {
     ...models,
     roles: models.roles.map((r) => (r.models === "panel" ? { ...r, models: models.panel } : r)),
+    codex: {
+      ...models.codex,
+      roles: models.codex.roles.map((r) =>
+        r.models === "panel" ? { ...r, models: models.codex.panelQuad } : r,
+      ),
+    },
   };
 }
 
@@ -477,21 +483,38 @@ export function overrideSheetBlock(models) {
 }
 
 export function codexModelNamesSection(models) {
-  const strongest = models.roles.filter(
-    (r) => r.models.length === 1 && r.models[0] !== models.singleRoleDefault,
-  );
+  const catalog = models.codex.available
+    .map(
+      (m) =>
+        `- ${code(m.slug)} (${m.label}): ${m.description} Default reasoning is ${code(m.defaultReasoningLevel)}; ` +
+        `supported levels are ${m.supportedReasoningLevels.map(code).join(", ")}.`,
+    )
+    .join("\n");
+  const roles = models.codex.roles.map((r) => {
+    const isPanel =
+      r.models === "panel" ||
+      (Array.isArray(r.models) &&
+        r.models.length === models.codex.panelQuad.length &&
+        r.models.every((slug, i) => slug === models.codex.panelQuad[i]));
+    const value = isPanel
+      ? "Codex panel quad"
+      : codeList(r.models);
+    return `| ${r.role} | ${value} |`;
+  });
   return (
     "Skills name Claude defaults (a single-role default for code/prose/judgment plus a diverse-model panel for " +
-    "diverse-model panels; each model-consuming skill lists its own in a Models section). These slugs do not " +
-    "resolve on Codex. Substitute your configured Codex models:\n\n" +
-    `- Single-model roles: your primary Codex model (for example ${code(models.codex.singleRoleExample)}).\n` +
-    `- Roles that default to the strongest Claude model (${strongest.map((r) => code(r.role)).join(", ")}): ` +
-    `your strongest Codex model (for example ${code(models.codex.strongestRoleExample)}).\n` +
-    "- Diverse-model panels (`arena`, `architect`, `interrogate`, `how` critics, `reflect`): the adversarial " +
-    "signal comes from model diversity, so use the distinct Codex models available to you. A good default quad " +
-    `on ChatGPT is ${codeList(models.codex.panelQuad)}. If only one model family is reachable, vary reasoning ` +
-    "effort and note in the verdict that diversity was reduced.\n\n" +
-    "`/setup-pstack` writes the configured model list. On Codex, set it to your Codex model slugs."
+    "diverse-model panels; each model-consuming skill lists its own in a Models section). Those slugs do not " +
+    "resolve on Codex. The mappings below use selectable models from the Codex CLI catalog.\n\n" +
+    `Catalog source: \`codex debug models\` from Codex CLI ${models.codex.catalogVersion}.\n\n` +
+    "Available Codex CLI models:\n" +
+    `${catalog}\n\n` +
+    "Codex defaults by pstack role:\n\n" +
+    "| Role | Model |\n| --- | --- |\n" +
+    `${roles.join("\n")}\n\n` +
+    `Single-model default: ${code(models.codex.singleRoleDefault)}. Strongest-model default: ${code(models.codex.strongestRoleDefault)}.\n` +
+    `Codex panel quad: ${codeList(models.codex.panelQuad)}.\n\n` +
+    "`/setup-pstack` writes the configured model list. On Codex, use the model slugs in the mappings above. " +
+    "If a panel can reach only one model family, vary reasoning effort and report the reduced model diversity."
   );
 }
 
